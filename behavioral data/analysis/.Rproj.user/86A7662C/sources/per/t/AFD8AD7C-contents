@@ -1,0 +1,70 @@
+library(tidyverse)
+source("2_code/_helpers.R")
+
+df_long = read_csv("1_data/loss_semantics_clean.csv") %>% 
+  pivot_longer(
+    cols = association_1:situation_5,
+    names_to = c(".value", "position"),
+    names_pattern = "(association|situation)(_\\d+)") %>% 
+  mutate(position = str_remove(position, "_") %>% as.integer())
+
+# CLEANUP ASSOCIATIONS
+
+entries = unique(df_long$association)
+entries_clean = entries %>% sapply(clean_up) %>% unname()
+correct = sapply(entries_clean, check_multi)
+
+system = "You are a helpful assistant who accurately suggests correct spellings for English words in the context of a free association task. The free association task presents cue 'loss' and asks participants to produce free association responses."
+instruct = "What is the correct English spelling for '{WORD}' in the context of the cue 'loss'. The spelling could be false or correct. Choose an appropriate capitalization. Only return the correct spelling for '{WORD}' and use the following format: [correct spelling]."
+
+candidates = entries_clean[!correct]
+llama_resp = correct_llama(candidates, sleep = .1, system = system, instruct = instruct)
+llama_dict = tolower(llama_resp) %>% str_remove_all("\n") %>% str_remove_all("^assistant *")
+names(llama_dict) = entries[!correct]
+
+dict = tibble(entries, hunspell = correct) %>% 
+  mutate(correct = case_when(
+    correct ~ entries, 
+    TRUE ~ llama_dict[entries])) %>% 
+  pull(correct, entries)
+
+df_long$association_clean = gsub("[^[:alnum:][:space:]'-]", "", tolower(dict[df_long$association]))
+
+df_long = df_long %>% mutate(association_clean = case_when(
+  str_replace_all(tolower(association_clean), "\\/|\\.", "") %in% c("na", "none", "no", "nan") ~ NA,
+  TRUE ~ association_clean))
+
+
+# CLEANUP SITUATIONS
+
+entries = unique(df_long$situation)
+entries_clean = entries %>% sapply(clean_up) %>% unname()
+correct = sapply(entries_clean, check_multi)
+
+system = "You are a helpful assistant who accurately suggests correct spellings for English words in the context of a situation retrieval task. The situation retrieval task asks participants to produce situations related to loss."
+instruct = "What is the correct English spelling for '{WORD}' in the context loss-related situations. The spelling could be false or correct. Choose an appropriate capitalization. Only return the correct spelling for '{WORD}' and use the following format: [correct spelling]."
+
+candidates = entries_clean[!correct]
+llama_resp = correct_llama(candidates, sleep = .1, system = system, instruct = instruct)
+llama_dict = tolower(llama_resp) %>% str_remove_all("\n") %>% str_remove_all("^assistant *")
+names(llama_dict) = entries[!correct]
+
+dict = tibble(entries, hunspell = correct) %>% 
+  mutate(correct = case_when(
+    correct ~ entries, 
+    TRUE ~ llama_dict[entries])) %>% 
+  pull(correct, entries)
+
+df_long$situation_clean = gsub("[^[:alnum:][:space:]'-]", "", tolower(dict[df_long$situation]))
+
+
+df_long = df_long %>% mutate(situation_clean = case_when(
+  str_replace_all(tolower(situation_clean), "\\/|\\.", "") %in% c("na", "none", "no", "nan") ~ NA,
+  TRUE ~ situation_clean))
+
+
+
+write_csv(df_long, "1_data/loss_semantics_clean_spellcheck.csv")
+
+
+
