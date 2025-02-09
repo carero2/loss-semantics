@@ -20,12 +20,12 @@ check_multi = function(x){
 
 use_condaenv("base")
 hub = import("huggingface_hub")
-client = hub$InferenceClient(token = "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",
-                             model = "meta-llama/Meta-Llama-3.1-70B-Instruct", 
-                             headers = list("X-use-cache" = "false"))
 
 
-correct_llama = function(words, sleep = .5, system, instruct){
+correct_llama = function(words, sleep = .5, system, instruct, token){
+  client = hub$InferenceClient(token = token,
+                               model = "meta-llama/Meta-Llama-3.1-70B-Instruct", 
+                               headers = list("X-use-cache" = "false"))
   
   template = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>{system}<|eot_id|><|start_header_id|>user<|end_header_id|>{user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
   
@@ -60,9 +60,12 @@ correct_llama = function(words, sleep = .5, system, instruct){
 }
 
 
-normalize_llama = function(words, sleep = .5, system, instruct){
+normalize_llama = function(words, sleep = .5, system, instruct, token){
   
   template = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>{system}<|eot_id|><|start_header_id|>user<|end_header_id|>{user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+  client = hub$InferenceClient(token = token,
+                               model = "meta-llama/Meta-Llama-3.1-70B-Instruct", 
+                               headers = list("X-use-cache" = "false"))
   
   responses = c()
   for(i in 1:length(words)){
@@ -95,10 +98,12 @@ normalize_llama = function(words, sleep = .5, system, instruct){
   responses
 }
 
-single_use_llama = function(system, instruct){
+single_use_llama = function(system, instruct, token){
   
   template = "<|begin_of_text|><|start_header_id|>system<|end_header_id|>{system}<|eot_id|><|start_header_id|>user<|end_header_id|>{user}<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
-  
+  client = hub$InferenceClient(token = token,
+                               model = "meta-llama/Meta-Llama-3.1-70B-Instruct", 
+                               headers = list("X-use-cache" = "false"))
   user = glue(instruct)
   prompt = glue(template)
   

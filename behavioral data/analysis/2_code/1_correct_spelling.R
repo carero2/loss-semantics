@@ -25,7 +25,7 @@ instruct = "Given the context of the cue 'loss', 'losing', or 'losses', determin
 
 candidates = entries_clean[!correct]
 print(length(candidates))
-llama_resp = correct_llama(candidates, sleep = .1, system = system, instruct = instruct)
+llama_resp = correct_llama(candidates, sleep = .1, system = system, instruct = instruct, token =)
 llama_dict = tolower(llama_resp) %>% str_remove_all('\n|\\/|\\.|\\[|\\]"') %>%
   str_remove_all("^assistant *")
 names(llama_dict) = entries[!correct]
